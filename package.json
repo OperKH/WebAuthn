@@ -1,0 +1,55 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "main": "./server/main.mjs",
+  "license": "MIT",
+  "scripts": {
+    "start": "npm i && node --experimental-modules ./server/main.mjs",
+    "dev": "nodemon --experimental-modules ./server/main.mjs"
+  },
+  "dependencies": {
+    "bcrypt-nodejs": "^0.0.3",
+    "jsonwebtoken": "^8.4.0",
+    "koa": "^2.2.0",
+    "koa-bodyparser": "^4.2.0",
+    "koa-jwt": "^3.2.1",
+    "koa-logger": "^3.2.0",
+    "koa-mount": "^4.0.0",
+    "koa-route": "^3.2.0",
+    "koa-spa": "^0.1.3",
+    "koa-static": "^5.0.0",
+    "sequelize": "^4.42.0",
+    "sqlite3": "^4.0.6"
+  },
+  "devDependencies": {
+    "eslint": "^5.13.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^4.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "nodemon": "^1.11.0",
+    "pre-commit": "^1.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "airbnb-base",
+      "prettier"
+    ],
+    "env": {
+      "node": true
+    },
+    "rules": {
+      "no-use-before-define": 0
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 120
+  },
+  "engines": {
+    "node": ">= 8.9.0",
+    "npm": ">= 5.6.0"
+  }
+}

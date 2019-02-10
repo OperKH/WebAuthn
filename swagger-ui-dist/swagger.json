@@ -1,0 +1,493 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Swagger UI description",
+        "version": "1.0.0",
+        "title": "KOA App API",
+        "contact": {
+            "email": "root@example.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    },
+    "host": "localhost:3000",
+    "basePath": "/api/v1",
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login",
+                "description": "Login",
+                "operationId": "login",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Login body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "login": {
+                                    "type": "string"
+                                },
+                                "password": {
+                                    "type": "string",
+                                    "format": "password"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/ApiResponse"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "user": {
+                                        "$ref": "#/definitions/User"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "token": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "400": {
+                        "description": "Incorrect credentials"
+                    }
+                }
+            }
+        },
+        "/auth/recover-password": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Recover password",
+                "description": "Recover password",
+                "operationId": "recoverPassword",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Specify email to restore password",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/recover-password/{recovery-token}": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Recover password",
+                "description": "Recover password",
+                "operationId": "recoverPassword",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "recovery-token",
+                        "in": "path",
+                        "description": "Recovery token that needs to identify user",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Specify new password",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "password": {
+                                    "type": "string",
+                                    "format": "password"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get all users",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "getAllUsers",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/ApiResponse"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "users": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/User"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "401": {
+                        "description": "Authorization required"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create new user",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "createUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "User object wil be added to the DB",
+                        "required": true,
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/User"
+                                },
+                                {
+                                    "properties": {
+                                        "type": "object",
+                                        "required": [
+                                            "password"
+                                        ],
+                                        "password": {
+                                            "type": "string",
+                                            "format": "password"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/ApiResponse"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "user": {
+                                        "$ref": "#/definitions/User"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "401": {
+                        "description": "Authorization required"
+                    },
+                    "403": {
+                        "description": "Invalid input"
+                    },
+                    "409": {
+                        "description": "Duplicated field"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user by ID",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "getUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of user that needs to be fetched",
+                        "required": true,
+                        "type": "integer",
+                        "minimum": 1,
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/ApiResponse"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "user": {
+                                        "$ref": "#/definitions/User"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "401": {
+                        "description": "Authorization required"
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update user by ID",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "updateUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of user that needs to be fetched",
+                        "required": true,
+                        "type": "integer",
+                        "minimum": 1,
+                        "format": "int32"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "User object that wil update user in DB",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string"
+                                },
+                                "role": {
+                                    "type": "string",
+                                    "enum": [
+                                        "admin",
+                                        "user"
+                                    ]
+                                },
+                                "password": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorization required"
+                    },
+                    "403": {
+                        "description": "Invalid input"
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Duplicated field"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete user by ID",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "deleteUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of user that needs to be fetched",
+                        "required": true,
+                        "type": "integer",
+                        "minimum": 1,
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorization required"
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/ApiResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+    "definitions": {
+        "User": {
+            "type": "object",
+            "required": [
+                "login",
+                "email"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "user"
+                    ]
+                }
+            }
+        },
+        "ApiResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
