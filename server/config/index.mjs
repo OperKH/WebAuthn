@@ -5,6 +5,9 @@ const baseConfig = {
     env,
     port: process.env.PORT || 3000,
     secret: process.env.SECRET_KEY || 'secret key',
+    cookieSecret1: process.env.COOKIE_SECRET_KEY1 || 'cookie secret key 1',
+    cookieSecret2: process.env.COOKIE_SECRET_KEY2 || 'cookie secret key 2',
+    cookieSecret3: process.env.COOKIE_SECRET_KEY3 || 'cookie secret key 3',
   },
 };
 
@@ -18,6 +21,9 @@ const platformConfig = {
         dialect: 'sqlite',
         storage: ':memory:',
       },
+    },
+    webauthn: {
+      origin: `http://localhost:${baseConfig.app.port}`,
     },
   },
   test: {
@@ -54,6 +60,9 @@ const platformConfig = {
     //     port: process.env.DB_PORT || 3306,
     //   },
     // },
+    webauthn: {
+      origin: `https://webauthn.operkh.com`,
+    },
   },
 };
 
