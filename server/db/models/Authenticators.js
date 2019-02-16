@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('Authenticator', {
+  return sequelize.define('Authenticators', {
     publicKey: {
       type: DataTypes.STRING,
     },

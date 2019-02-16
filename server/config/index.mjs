@@ -3,7 +3,7 @@ const env = process.env.NODE_ENV || 'development';
 const baseConfig = {
   app: {
     env,
-    port: process.env.PORT || 3000,
+    port: process.env.PORT || 8084,
     secret: process.env.SECRET_KEY || 'secret key',
     cookieSecret1: process.env.COOKIE_SECRET_KEY1 || 'cookie secret key 1',
     cookieSecret2: process.env.COOKIE_SECRET_KEY2 || 'cookie secret key 2',

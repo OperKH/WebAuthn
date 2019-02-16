@@ -29,8 +29,7 @@
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-prettier": "^4.0.0",
     "eslint-plugin-import": "^2.2.0",
-    "nodemon": "^1.11.0",
-    "pre-commit": "^1.2.2"
+    "nodemon": "^1.11.0"
   },
   "eslintConfig": {
     "root": true,
@@ -52,7 +51,7 @@
     "printWidth": 120
   },
   "engines": {
-    "node": ">= 8.9.0",
-    "npm": ">= 5.6.0"
+    "node": ">= 10.15.0",
+    "npm": ">= 6.4.1"
   }
 }

@@ -104,26 +104,20 @@ class WebauthnCtrl {
 
     let result;
     if (clientAttestationResponse.response.attestationObject !== undefined) {
-      try {
-        result = await f2l.attestationResult(clientAttestationResponse.toObject(), attestationExpectations);
-        const { email } = ctx.session;
-        const newUser = {
-          login: email,
-          email,
-          password: '',
-        };
-        await userService.create(newUser, { role: 'admin' });
-
-        const userAuthenticator = {
+      result = await f2l.attestationResult(clientAttestationResponse.toObject(), attestationExpectations);
+      const { email } = ctx.session;
+      const newUser = {
+        login: email,
+        email,
+        password: '',
+        Authenticators: [{
           publicKey: result.authnrData.get('credentialPublicKeyPem'),
           aaguid: coerceToBase64(result.authnrData.get('aaguid')),
           credId: coerceToBase64(result.authnrData.get('credId')),
           prevCounter: result.authnrData.get('counter'),
-        };
-        // TODO: save authenticator
-      } catch (e) {
-        console.log(e);
-      }
+        }],
+      };
+      await userService.createWithAuthenticator(newUser);
       ctx.session = null;
     } else if (clientAttestationResponse.response.authenticatorData !== undefined) {
       // TODO: verifyAuthenticatorAssertionResponse

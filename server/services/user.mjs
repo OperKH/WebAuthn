@@ -14,6 +14,8 @@ import {
 class UserService {
   constructor() {
     this.User = db.User;
+    this.Authenticators = db.Authenticators;
+    this.sequelize = db.sequelize;
     this.userPublicFields = ['id', 'login', 'email', 'role'];
   }
 
@@ -73,7 +75,24 @@ class UserService {
     } catch (e) {
       this.handleErrorCreateUpdate(e);
     }
-    // es-lint
+    return null;
+  }
+
+  async createWithAuthenticator(data) {
+    const { User, Authenticators, sequelize } = this;
+    const newUser = {
+      role: 'user',
+      ...data,
+      password: bcrypt.hashSync(data.password),
+    };
+    try {
+      const result = await sequelize.transaction(transaction => {
+        return User.create(newUser, { include: Authenticators, transaction });
+      });
+      return result;
+    } catch (e) {
+      this.handleErrorCreateUpdate(e);
+    }
     return null;
   }
 
@@ -110,7 +129,6 @@ class UserService {
     } catch (e) {
       this.handleErrorCreateUpdate(e);
     }
-    // es-lint
     return null;
   }
 
