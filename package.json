@@ -25,7 +25,8 @@
     "webauthn-simple-app": "^2.0.0"
   },
   "devDependencies": {
-    "eslint": "^5.13.0",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.14.1",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-prettier": "^4.0.0",
     "eslint-plugin-import": "^2.2.0",
@@ -37,6 +38,7 @@
       "airbnb-base",
       "prettier"
     ],
+    "parser": "babel-eslint",
     "env": {
       "node": true
     },

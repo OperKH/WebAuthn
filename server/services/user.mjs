@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt-nodejs';
 
-// eslint-disable-next-line
 import db from '../db';
 
 import {

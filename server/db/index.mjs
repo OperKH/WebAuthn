@@ -11,7 +11,8 @@ const sequelize = new Sequelize(database, user, password, options);
 const models = 'models';
 const db = {};
 
-const __dirname = fileURLToPath(import.meta.url).replace(/[\/\\][^\/\\]*?$/, '');
+// eslint-disable-next-line no-underscore-dangle
+const __dirname = fileURLToPath(import.meta.url).replace(/[/\\][^/\\]*?$/, '');
 
 fs.readdirSync(path.join(__dirname, models))
   .filter(file => file.indexOf('.') !== 0 && /\.js$/.test(file) && file !== 'index.js')

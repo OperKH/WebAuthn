@@ -1,7 +1,6 @@
 import Koa from 'koa';
 import config from './config';
 import koaConfig from './config/koa';
-// eslint-disable-next-line
 import db from './db';
 import userService from './services/user';
 
