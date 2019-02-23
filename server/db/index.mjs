@@ -24,7 +24,7 @@ fs.readdirSync(path.join(__dirname, models))
 const { User, Authenticators } = db;
 
 Authenticators.belongsTo(User, { onDelete: 'cascade' });
-User.hasMany(Authenticators);
+User.hasMany(Authenticators, { as: 'authenticators' });
 
 Object.keys(db).forEach(modelName => {
   if ('associate' in db[modelName]) {

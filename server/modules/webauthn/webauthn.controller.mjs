@@ -1,16 +1,19 @@
 /* eslint-disable class-methods-use-this */
 import F2L from '@davedoesdev/fido2-lib';
 import WebauthnSimpleApp from 'webauthn-simple-app';
+import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
 import config from '../../config';
 import { status } from '../../helpers/constants';
 import userService from '../../services/user';
+import authenticatorsService from '../../services/authenticators';
+import { coerceToArrayBuffer, coerceToBase64 } from './utils';
 
 const domain = config.webauthn.origin.replace(/https?:\/\//, '').replace(/:.*$/, '');
 
 const { Fido2Lib } = F2L;
-const { CreateOptions, CredentialAttestation } = WebauthnSimpleApp;
+const { CreateOptions, CredentialAttestation, GetOptions, CredentialAssertion } = WebauthnSimpleApp;
 const f2l = new Fido2Lib({
   rpId: domain,
   rpName: 'OperKH',
@@ -66,9 +69,7 @@ class WebauthnCtrl {
   }
 
   async response(ctx) {
-    const clientAttestationResponse = CredentialAttestation.from(ctx.request.body);
-    clientAttestationResponse.validate();
-    clientAttestationResponse.decodeBinaryProperties();
+    const webauthnResponse = ctx.request.body;
 
     if (
       !ctx.session ||
@@ -90,37 +91,102 @@ class WebauthnCtrl {
       ctx.status = 400;
       ctx.body = {
         status: status.error,
-        message: 'Register request timed out',
+        message: 'Request timed out',
       };
       return;
     }
 
-    // set expectations
-    const attestationExpectations = {
-      challenge: coerceToArrayBuffer(ctx.session.challenge, 'session.challenge'),
-      origin: config.webauthn.origin,
-      factor: 'either',
-    };
+    const { email } = ctx.session;
 
-    let result;
-    if (clientAttestationResponse.response.attestationObject !== undefined) {
-      result = await f2l.attestationResult(clientAttestationResponse.toObject(), attestationExpectations);
-      const { email } = ctx.session;
+    if (webauthnResponse.response.attestationObject) {
+      const clientAttestationResponse = CredentialAttestation.from(webauthnResponse);
+      clientAttestationResponse.validate();
+      clientAttestationResponse.decodeBinaryProperties();
+
+      // set expectations
+      const attestationExpectations = {
+        challenge: coerceToArrayBuffer(ctx.session.challenge, 'session.challenge'),
+        origin: config.webauthn.origin,
+        factor: 'either',
+      };
+
+      const result = await f2l.attestationResult(clientAttestationResponse.toObject(), attestationExpectations);
+
       const newUser = {
         login: email,
         email,
         password: '',
-        Authenticators: [{
-          publicKey: result.authnrData.get('credentialPublicKeyPem'),
-          aaguid: coerceToBase64(result.authnrData.get('aaguid')),
-          credId: coerceToBase64(result.authnrData.get('credId')),
-          prevCounter: result.authnrData.get('counter'),
-        }],
+        authenticators: [
+          {
+            publicKey: result.authnrData.get('credentialPublicKeyPem'),
+            aaguid: coerceToBase64(result.authnrData.get('aaguid')),
+            credId: coerceToBase64(result.authnrData.get('credId')),
+            prevCounter: result.authnrData.get('counter'),
+          },
+        ],
       };
       await userService.createWithAuthenticator(newUser);
       ctx.session = null;
-    } else if (clientAttestationResponse.response.authenticatorData !== undefined) {
-      // TODO: verifyAuthenticatorAssertionResponse
+      if (result) {
+        ctx.status = 200;
+        ctx.body = {
+          status: status.success,
+        };
+        return;
+      }
+    } else if (webauthnResponse.response.authenticatorData) {
+      const clientAssertionResponse = CredentialAssertion.from(webauthnResponse);
+      clientAssertionResponse.validate();
+      clientAssertionResponse.decodeBinaryProperties();
+
+      const user = await userService.findByEmailWithAuthenticators(email);
+
+      if (user && user.authenticators && user.authenticators.length) {
+        const authenticator = user.authenticators.find(a => a.credId === webauthnResponse.rawId);
+        if (!authenticator) {
+          ctx.status = 400;
+          ctx.body = {
+            status: status.error,
+            message: 'Login Fail',
+          };
+          return;
+        }
+
+        const assertionExpectations = {
+          challenge: coerceToArrayBuffer(ctx.session.challenge, 'session.challenge'),
+          origin: config.webauthn.origin,
+          factor: 'either',
+          publicKey: authenticator.publicKey,
+          prevCounter: authenticator.prevCounter,
+          userHandle: coerceToArrayBuffer(ctx.session.userId, 'session.userId'),
+        };
+
+        const result = await f2l.assertionResult(clientAssertionResponse.toObject(), assertionExpectations);
+
+        if (result) {
+          await authenticatorsService.updateCounter(authenticator.id, result.authnrData.get('counter'));
+
+          const token = jwt.sign({ id: user.id, role: user.role }, config.app.secret, {
+            expiresIn: 60 * 60 * 24 * 7,
+          });
+
+          ctx.session = null;
+          ctx.status = 200;
+          ctx.body = {
+            status: status.success,
+            message: 'OK',
+            token,
+          };
+          return;
+        }
+      } else {
+        ctx.status = 400;
+        ctx.body = {
+          status: status.error,
+          message: 'Login Fail',
+        };
+        return;
+      }
     } else {
       ctx.status = 400;
       ctx.body = {
@@ -130,84 +196,57 @@ class WebauthnCtrl {
       return;
     }
 
-    if (result) {
-      ctx.status = 200;
+    ctx.status = 400;
+    ctx.body = {
+      status: status.error,
+      message: 'Can not authenticate signature!',
+    };
+  }
+
+  async login(ctx) {
+    const { email } = ctx.request.body;
+
+    if (!email) {
+      ctx.status = 400;
       ctx.body = {
-        status: status.success,
+        status: status.error,
+        message: 'No email',
       };
+      return;
+    }
+
+    const user = await userService.findByEmailWithAuthenticators(email);
+
+    if (user && user.authenticators && user.authenticators.length) {
+      const { challenge } = await f2l.assertionOptions();
+
+      const response = new GetOptions();
+      response.challenge = challenge;
+      response.timeout = f2l.config.timeout;
+      // send credIds available for login
+      response.allowCredentials = user.authenticators.map(authenticator => ({
+        id: authenticator.credId,
+        type: 'public-key',
+      }));
+      response.status = 'ok';
+      response.encodeBinaryProperties();
+      response.validate();
+      response.status = status.success;
+
+      ctx.session.email = email;
+      ctx.session.userId = coerceToBase64(crypto.randomBytes(32));
+      ctx.session.challenge = response.challenge;
+      ctx.session.challengeTime = Date.now();
+
+      ctx.body = response.toString();
     } else {
       ctx.status = 400;
       ctx.body = {
         status: status.error,
-        message: 'Can not authenticate signature!',
+        message: 'Login Fail',
       };
     }
   }
-
-  async login(ctx) {
-    ctx.status = 404;
-    ctx.body = {
-      status: status.error,
-      message: 'Not implemented',
-    };
-  }
-}
-
-function coerceToArrayBuffer(inputBuf, name) {
-  let buf = inputBuf;
-  if (typeof buf === 'string') {
-    // base64url to base64
-    buf = buf.replace(/-/g, '+').replace(/_/g, '/');
-    // base64 to Buffer
-    buf = Buffer.from(buf, 'base64');
-  }
-
-  if (buf instanceof Buffer || Array.isArray(buf)) {
-    buf = new Uint8Array(buf);
-  }
-
-  if (buf instanceof Uint8Array) {
-    buf = buf.buffer;
-  }
-
-  if (!(buf instanceof ArrayBuffer)) {
-    throw new TypeError(`could not coerce '${name}' to ArrayBuffer`);
-  }
-
-  return buf;
-}
-
-function coerceToBase64(inputThing, name) {
-  let thing = inputThing;
-  // Array to Uint8Array
-  if (Array.isArray(thing)) {
-    thing = Uint8Array.from(thing);
-  }
-
-  // Uint8Array, etc. to ArrayBuffer
-  if (thing.buffer instanceof ArrayBuffer && !(thing instanceof Buffer)) {
-    thing = thing.buffer;
-  }
-
-  // ArrayBuffer to Buffer
-  if (thing instanceof ArrayBuffer && !(thing instanceof Buffer)) {
-    thing = Buffer.from(thing);
-  }
-
-  // Buffer to base64 string
-  if (thing instanceof Buffer) {
-    thing = thing.toString('base64');
-  }
-
-  if (typeof thing !== 'string') {
-    throw new Error(`couldn't coerce '${name}' to string`);
-  }
-
-  // base64 to base64url
-  // NOTE: "=" at the end of challenge is optional, strip it off here so that it's compatible with client
-  // thing = thing.replace(/\+/g, "-").replace(/\//g, "_").replace(/=*$/g, "");
-
-  return thing;
 }
 
 export default new WebauthnCtrl();

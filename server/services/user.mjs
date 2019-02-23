@@ -16,24 +16,41 @@ class UserService {
     this.Authenticators = db.Authenticators;
     this.sequelize = db.sequelize;
     this.userPublicFields = ['id', 'login', 'email', 'role'];
+    this.authenticatorsPublicFields = ['id', 'publicKey', 'aaguid', 'credId', 'prevCounter'];
   }
 
   async findAll() {
     const { User, userPublicFields } = this;
     const users = await User.findAll({ attributes: userPublicFields });
-    return users.map(u => u.dataValues);
+    return users.map(u => u.get({ plain: true }));
   }
 
   async findById(id) {
     const { User, userPublicFields } = this;
     const user = await User.findOne({ where: { id }, attributes: userPublicFields });
-    return user ? user.dataValues : null;
+    return user ? user.get({ plain: true }) : null;
   }
 
   async findByEmail(email) {
     const { User, userPublicFields } = this;
     const user = await User.findOne({ where: { email }, attributes: userPublicFields });
-    return user ? user.dataValues : null;
+    return user ? user.get({ plain: true }) : null;
+  }
+
+  async findByEmailWithAuthenticators(email) {
+    const { User, Authenticators, userPublicFields, authenticatorsPublicFields } = this;
+    const user = await User.findOne({
+      where: { email },
+      include: [
+        {
+          model: Authenticators,
+          as: 'authenticators',
+          attributes: authenticatorsPublicFields,
+        },
+      ],
+      attributes: userPublicFields,
+    });
+    return user ? user.get({ plain: true }) : null;
   }
 
   async findByCredentials(data) {
@@ -86,7 +103,7 @@ class UserService {
     };
     try {
       const result = await sequelize.transaction(transaction => {
-        return User.create(newUser, { include: Authenticators, transaction });
+        return User.create(newUser, { include: [{ model: Authenticators, as: 'authenticators' }], transaction });
       });
       return result;
     } catch (e) {

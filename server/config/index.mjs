@@ -20,6 +20,7 @@ const platformConfig = {
       options: {
         dialect: 'sqlite',
         storage: ':memory:',
+        operatorsAliases: false,
       },
     },
     webauthn: {
@@ -37,6 +38,7 @@ const platformConfig = {
       options: {
         dialect: 'sqlite',
         storage: ':memory:',
+        operatorsAliases: false,
       },
     },
   },
@@ -48,6 +50,8 @@ const platformConfig = {
       options: {
         dialect: 'sqlite',
         storage: 'db.sqlite',
+        operatorsAliases: false,
+        logging: false,
       },
     },
     // db: {
@@ -58,6 +62,7 @@ const platformConfig = {
     //     dialect: 'mysql',
     //     host: process.env.DB_HOST || 'localhost',
     //     port: process.env.DB_PORT || 3306,
+    //     operatorsAliases: false,
     //   },
     // },
     webauthn: {
